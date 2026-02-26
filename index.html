@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cam Chaos Booth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <p class="eyebrow">Webcam Playground</p>
+        <h1>Cam Chaos Booth</h1>
+        <p class="subtitle">
+          Live filters, glitch mode, and instant snapshots. Built as a static Vercel-ready demo.
+        </p>
+      </header>
+
+      <section class="stage" aria-label="camera stage">
+        <div class="view-shell">
+          <video id="cameraFeed" autoplay playsinline muted hidden></video>
+          <canvas id="outputCanvas" width="960" height="540" aria-label="filtered camera output"></canvas>
+          <div class="hud">
+            <span id="statusPill">Camera idle</span>
+            <span id="fpsPill">FPS: 0</span>
+          </div>
+        </div>
+
+        <aside class="controls" aria-label="effect controls">
+          <div class="control-row">
+            <button id="startBtn" type="button">Start Camera</button>
+            <button id="stopBtn" type="button" disabled>Stop</button>
+          </div>
+
+          <label class="control-block" for="effectSelect">
+            Effect
+            <select id="effectSelect"></select>
+          </label>
+
+          <label class="control-block" for="intensityRange">
+            Intensity
+            <input id="intensityRange" type="range" min="0" max="1" step="0.01" value="0.65" />
+            <span id="intensityValue">65%</span>
+          </label>
+
+          <label class="toggle-row" for="glitchToggle">
+            <input id="glitchToggle" type="checkbox" />
+            <span>Enable Glitch Sweep</span>
+          </label>
+
+          <div class="control-row">
+            <button id="captureBtn" type="button" disabled>Capture Frame</button>
+            <button id="clearBtn" type="button">Clear Shots</button>
+          </div>
+
+          <p class="shortcut-note">Shortcuts: <kbd>1-0</kbd> + <kbd>-</kbd>/<kbd>=</kbd> effects, <kbd>G</kbd> glitch, <kbd>C</kbd> capture.</p>
+        </aside>
+      </section>
+
+      <section class="shots" aria-label="snapshot strip">
+        <div class="shots-header">
+          <h2>Snapshot Strip</h2>
+          <p id="shotCount">0 captures</p>
+        </div>
+        <div id="shotStrip" class="shot-strip"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
