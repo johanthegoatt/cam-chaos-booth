@@ -20,6 +20,8 @@ const elements = {
   fpsPill: document.getElementById("fpsPill"),
   shotStrip: document.getElementById("shotStrip"),
   shotCount: document.getElementById("shotCount"),
+  timerSelect: document.getElementById("timerSelect"),
+  countdown: document.getElementById("countdown"),
 };
 
 const state = {
@@ -30,6 +32,7 @@ const state = {
   glitchSweep: false,
   frame: 0,
   shotId: 0,
+  countdownTimer: null,
   fps: {
     count: 0,
     sampleStartedAt: performance.now(),
@@ -158,6 +161,7 @@ function stopCamera() {
     return;
   }
 
+  cancelCountdown();
   state.stream.getTracks().forEach((track) => track.stop());
   state.stream = null;
   elements.video.srcObject = null;
@@ -175,39 +179,101 @@ function updateShotCount() {
   elements.shotCount.textContent = `${count} ${count === 1 ? "capture" : "captures"}`;
 }
 
+// Each capture is a Blob behind an object URL. toDataURL encoded every
+// 1280x720 JPEG to a base64 string on the main thread (a visible hitch in
+// the live view) and kept two copies of it in the page, in the <img> and
+// the download link. toBlob encodes off the main thread, and the URL is
+// revoked when the card goes so the memory comes back.
+function removeCard(card) {
+  URL.revokeObjectURL(card.dataset.url);
+  card.remove();
+}
+
+function saveShot() {
+  if (!state.stream) {
+    return;
+  }
+
+  state.shotId += 1;
+  const id = state.shotId;
+  elements.canvas.toBlob(
+    (blob) => {
+      if (!blob) {
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+
+      const card = document.createElement("article");
+      card.className = "shot-card";
+      card.dataset.url = url;
+
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = `Captured frame ${id}`;
+
+      const download = document.createElement("a");
+      download.href = url;
+      download.download = `cam-chaos-${id}.jpg`;
+      download.textContent = "Download";
+
+      card.append(image, download);
+      elements.shotStrip.prepend(card);
+
+      while (elements.shotStrip.children.length > 16) {
+        removeCard(elements.shotStrip.lastElementChild);
+      }
+
+      updateShotCount();
+    },
+    "image/jpeg",
+    0.92,
+  );
+}
+
+// A booth needs a self-timer: with one hand on the mouse or the C key you
+// can't pose, and on a laptop the button is right under the camera.
 function captureShot() {
   if (!state.stream) {
     return;
   }
 
-  const url = elements.canvas.toDataURL("image/jpeg", 0.92);
-  state.shotId += 1;
-
-  const card = document.createElement("article");
-  card.className = "shot-card";
-
-  const image = document.createElement("img");
-  image.loading = "lazy";
-  image.src = url;
-  image.alt = `Captured frame ${state.shotId}`;
-
-  const download = document.createElement("a");
-  download.href = url;
-  download.download = `cam-chaos-${state.shotId}.jpg`;
-  download.textContent = "Download";
-
-  card.append(image, download);
-  elements.shotStrip.prepend(card);
-
-  while (elements.shotStrip.children.length > 16) {
-    elements.shotStrip.lastElementChild.remove();
+  if (state.countdownTimer) {
+    cancelCountdown();
+    return;
   }
 
-  updateShotCount();
+  let left = Number.parseInt(elements.timerSelect.value, 10) || 0;
+  if (left === 0) {
+    saveShot();
+    return;
+  }
+
+  elements.captureBtn.textContent = "Cancel Timer";
+  const tick = () => {
+    if (left === 0) {
+      cancelCountdown();
+      saveShot();
+      return;
+    }
+    elements.countdown.hidden = false;
+    elements.countdown.textContent = String(left);
+    left -= 1;
+    state.countdownTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+function cancelCountdown() {
+  clearTimeout(state.countdownTimer);
+  state.countdownTimer = null;
+  elements.countdown.hidden = true;
+  elements.captureBtn.textContent = "Capture Frame";
 }
 
 function clearShots() {
-  elements.shotStrip.replaceChildren();
+  for (const card of [...elements.shotStrip.children]) {
+    removeCard(card);
+  }
   updateShotCount();
 }
 

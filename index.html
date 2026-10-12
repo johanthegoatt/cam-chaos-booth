@@ -26,6 +26,7 @@
         <div class="view-shell">
           <video id="cameraFeed" autoplay playsinline muted hidden></video>
           <canvas id="outputCanvas" width="960" height="540" aria-label="filtered camera output"></canvas>
+          <div id="countdown" class="countdown" aria-live="assertive" hidden></div>
           <div class="hud">
             <span id="statusPill">Camera idle</span>
             <span id="fpsPill">FPS: 0</span>
@@ -52,6 +53,15 @@
           <label class="toggle-row" for="glitchToggle">
             <input id="glitchToggle" type="checkbox" />
             <span>Enable Glitch Sweep</span>
+          </label>
+
+          <label class="control-block" for="timerSelect">
+            Timer
+            <select id="timerSelect">
+              <option value="0">Off</option>
+              <option value="3" selected>3 seconds</option>
+              <option value="10">10 seconds</option>
+            </select>
           </label>
 
           <div class="control-row">
