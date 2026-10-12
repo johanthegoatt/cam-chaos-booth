@@ -4,12 +4,12 @@
 Cam Chaos Booth is a webcam playground with real-time visual effects, glitch sweeps, and a downloadable snapshot strip.
 
 ## Features
-- Live camera preview rendered on canvas
+- Live camera preview rendered on canvas, flipped like a mirror by default (toggle off for the true view); saved shots match the preview
 - Twelve effect modes: none, mirror blend, grayscale, solarize, edge pulse, RGB shift, sepia, invert, posterize, pixelate, vignette, comic ink
 - Adjustable intensity slider for every effect
 - Optional glitch sweep layer
-- One-click frame capture and download cards
-- Keyboard shortcuts for full effects map (`1-0`, `-`, `=`) and capture workflow
+- Capture with a 3 or 10 second self-timer, or instantly; shots are JPEG blobs from `canvas.toBlob`, freed when cleared
+- Keyboard shortcuts for full effects map (`1-0`, `-`, `=`) and capture workflow, ignored while a form control has focus
 - Unit tests for core pixel effect utilities
 - Static Vercel-ready deployment config
 

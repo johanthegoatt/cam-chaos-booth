@@ -16,6 +16,7 @@ const elements = {
   intensityRange: document.getElementById("intensityRange"),
   intensityValue: document.getElementById("intensityValue"),
   glitchToggle: document.getElementById("glitchToggle"),
+  mirrorToggle: document.getElementById("mirrorToggle"),
   statusPill: document.getElementById("statusPill"),
   fpsPill: document.getElementById("fpsPill"),
   shotStrip: document.getElementById("shotStrip"),
@@ -30,6 +31,10 @@ const state = {
   effect: "none",
   intensity: 0.65,
   glitchSweep: false,
+  // Front cameras show a mirror image by default on phones, because that is
+  // what people expect to see when they move. An unflipped view makes you
+  // lean the wrong way to get in frame. The saved shot matches what you saw.
+  mirror: true,
   frame: 0,
   shotId: 0,
   countdownTimer: null,
@@ -59,6 +64,7 @@ function syncControls() {
   elements.intensityValue.textContent = `${Math.round(state.intensity * 100)}%`;
   elements.effectSelect.value = state.effect;
   elements.glitchToggle.checked = state.glitchSweep;
+  elements.mirrorToggle.checked = state.mirror;
 }
 
 function updateStatus(message) {
@@ -93,7 +99,11 @@ function drawFrame() {
     elements.canvas.height = videoHeight;
   }
 
+  if (state.mirror) {
+    context.setTransform(-1, 0, 0, 1, videoWidth, 0);
+  }
   context.drawImage(elements.video, 0, 0, videoWidth, videoHeight);
+  context.setTransform(1, 0, 0, 1, 0, 0);
   const frame = context.getImageData(0, 0, videoWidth, videoHeight);
 
   const processedPixels = applyEffectToPixels(frame.data, {
@@ -305,12 +315,18 @@ elements.intensityRange.addEventListener("input", (event) => {
   elements.intensityValue.textContent = `${Math.round(state.intensity * 100)}%`;
 });
 
+elements.mirrorToggle.addEventListener("change", (event) => {
+  state.mirror = event.target.checked;
+});
+
 elements.glitchToggle.addEventListener("change", (event) => {
   state.glitchSweep = event.target.checked;
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.repeat) {
+  // Typing a number into a field, or pressing C on the timer menu, should
+  // not swap the effect or take a photo.
+  if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target.closest?.("input, select, textarea")) {
     return;
   }
 
