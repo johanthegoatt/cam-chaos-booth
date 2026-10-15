@@ -204,3 +204,16 @@ test("comic ink preserves alpha and applies stylized contrast", () => {
   assert.equal(output[15], 193);
   assert.ok(output[0] !== output[8] || output[1] !== output[9] || output[2] !== output[10]);
 });
+
+test("reuses scratch buffers and leaves the input untouched", () => {
+  const width = 4;
+  const height = 2;
+  const pixels = new Uint8ClampedArray(width * height * 4).map((_, i) => (i * 37) % 256);
+  const before = pixels.slice();
+  const scratch = { a: new Uint8ClampedArray(pixels.length), b: new Uint8ClampedArray(pixels.length) };
+  const out = applyEffectToPixels(pixels, { effect: "invert", intensity: 1, width, height, glitchSweep: true, scratch });
+  assert.equal(out, scratch.b);
+  assert.deepEqual(pixels, before);
+  const plain = applyEffectToPixels(pixels, { effect: "invert", intensity: 1, width, height, glitchSweep: true });
+  assert.deepEqual(out, plain);
+});

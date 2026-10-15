@@ -87,6 +87,8 @@ function updateFps() {
   }
 }
 
+const cpuScratch = { a: null, b: null };
+
 function drawFrame() {
   if (!state.stream) {
     return;
@@ -124,7 +126,13 @@ function drawFrame() {
   context.setTransform(1, 0, 0, 1, 0, 0);
   const frame = context.getImageData(0, 0, videoWidth, videoHeight);
 
+  const size = frame.data.length;
+  if (cpuScratch.a?.length !== size) {
+    cpuScratch.a = new Uint8ClampedArray(size);
+    cpuScratch.b = new Uint8ClampedArray(size);
+  }
   const processedPixels = applyEffectToPixels(frame.data, {
+    scratch: cpuScratch,
     effect: state.effect,
     intensity: state.intensity,
     width: videoWidth,

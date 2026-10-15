@@ -322,6 +322,9 @@ export function applyEffectToPixels(
     height,
     frame = 0,
     glitchSweep = false,
+    // Optional reusable buffers of pixels.length; a live view at 30 fps
+    // otherwise allocates (and the GC frees) megabytes a second.
+    scratch = null,
   } = {},
 ) {
   if (!width || !height) {
@@ -330,8 +333,10 @@ export function applyEffectToPixels(
 
   const safeIntensity = clamp(intensity, 0, 1);
   const selectedEffect = EFFECT_ID_SET.has(effect) ? effect : "none";
-  const base = new Uint8ClampedArray(pixels);
-  const transformed = new Uint8ClampedArray(base.length);
+  // Effects only read their source, so the caller's pixels are used directly.
+  const base = pixels;
+  const fits = (buffer) => buffer instanceof Uint8ClampedArray && buffer.length === base.length && buffer !== base;
+  const transformed = fits(scratch?.a) ? scratch.a : new Uint8ClampedArray(base.length);
 
   const effectContext = {
     width,
@@ -347,7 +352,7 @@ export function applyEffectToPixels(
     return transformed;
   }
 
-  const glitched = new Uint8ClampedArray(transformed.length);
+  const glitched = fits(scratch?.b) && scratch.b !== transformed ? scratch.b : new Uint8ClampedArray(transformed.length);
   applyGlitchSweep(transformed, glitched, effectContext);
   return glitched;
 }
