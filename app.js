@@ -24,6 +24,7 @@ const elements = {
   shotCount: document.getElementById("shotCount"),
   timerSelect: document.getElementById("timerSelect"),
   countdown: document.getElementById("countdown"),
+  stripBtn: document.getElementById("stripBtn"),
 };
 
 const state = {
@@ -210,8 +211,59 @@ function stopCamera() {
   updateStatus("Camera idle");
 }
 
+// The classic booth print: the last four shots stacked on a paper strip.
+const STRIP_SHOTS = 4;
+const STRIP_WIDTH = 600;
+const STRIP_PAD = 24;
+
+async function makePhotoStrip() {
+  const cards = [...elements.shotStrip.querySelectorAll(".shot-card")].slice(0, STRIP_SHOTS).reverse();
+  if (cards.length < 2) return;
+  elements.stripBtn.disabled = true;
+  try {
+    const images = await Promise.all(cards.map(async (card) => createImageBitmap(await (await fetch(card.dataset.url)).blob())));
+    const inner = STRIP_WIDTH - STRIP_PAD * 2;
+    const heights = images.map((image) => Math.round((inner * image.height) / image.width));
+    const footer = 64;
+    const canvas = document.createElement("canvas");
+    canvas.width = STRIP_WIDTH;
+    canvas.height = STRIP_PAD + heights.reduce((sum, h) => sum + h + STRIP_PAD, 0) + footer;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#f6f1e7";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let y = STRIP_PAD;
+    images.forEach((image, index) => {
+      ctx.drawImage(image, STRIP_PAD, y, inner, heights[index]);
+      image.close();
+      y += heights[index] + STRIP_PAD;
+    });
+    ctx.fillStyle = "#3b2f2a";
+    ctx.font = "600 22px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("CAM CHAOS BOOTH", STRIP_WIDTH / 2, y + 22);
+    ctx.font = "15px system-ui, sans-serif";
+    ctx.fillText(new Date().toLocaleDateString(undefined, { dateStyle: "long" }), STRIP_WIDTH / 2, y + 46);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) throw new Error("strip encode failed");
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cam-chaos-strip-${Date.now()}.jpg`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    updateStatus("Photo strip saved");
+  } catch (error) {
+    console.error(error);
+    updateStatus("Strip failed");
+  } finally {
+    updateShotCount();
+  }
+}
+
 function updateShotCount() {
   const count = elements.shotStrip.children.length;
+  elements.stripBtn.disabled = count < 2;
   elements.shotCount.textContent = `${count} ${count === 1 ? "capture" : "captures"}`;
 }
 
@@ -330,6 +382,7 @@ function selectEffectByShortcut(key) {
 elements.startBtn.addEventListener("click", startCamera);
 elements.stopBtn.addEventListener("click", stopCamera);
 elements.captureBtn.addEventListener("click", captureShot);
+elements.stripBtn.addEventListener("click", makePhotoStrip);
 elements.clearBtn.addEventListener("click", clearShots);
 
 elements.effectSelect.addEventListener("change", (event) => {
