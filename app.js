@@ -1,4 +1,5 @@
 import { applyEffectToPixels, EFFECT_OPTIONS } from "./src/effects.js";
+import { createGlRenderer } from "./src/glRenderer.js";
 
 const EFFECT_SHORTCUT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
 const EFFECT_SHORTCUT_MAP = new Map(
@@ -45,7 +46,10 @@ const state = {
   },
 };
 
-const context = elements.canvas.getContext("2d", { willReadFrequently: true });
+// A canvas gets one context type for life, so WebGL is tried first and the
+// 2D context (CPU effects) is only taken when WebGL is not there.
+const glRenderer = new URLSearchParams(location.search).has("cpu") ? null : createGlRenderer(elements.canvas);
+const context = glRenderer ? null : elements.canvas.getContext("2d", { willReadFrequently: true });
 
 function renderEffectOptions() {
   const fragment = document.createDocumentFragment();
@@ -79,7 +83,7 @@ function updateFps() {
     state.fps.value = Math.round((state.fps.count * 1000) / elapsed);
     state.fps.count = 0;
     state.fps.sampleStartedAt = performance.now();
-    elements.fpsPill.textContent = `FPS: ${state.fps.value}`;
+    elements.fpsPill.textContent = `FPS: ${state.fps.value} · ${glRenderer ? "GPU" : "CPU"}`;
   }
 }
 
@@ -90,6 +94,20 @@ function drawFrame() {
 
   const { videoWidth, videoHeight } = elements.video;
   if (!videoWidth || !videoHeight) {
+    state.rafId = requestAnimationFrame(drawFrame);
+    return;
+  }
+
+  if (glRenderer) {
+    glRenderer.render(elements.video, {
+      effect: state.effect,
+      intensity: state.intensity,
+      frame: state.frame,
+      glitchSweep: state.glitchSweep,
+      mirror: state.mirror,
+    });
+    state.frame += 1;
+    updateFps();
     state.rafId = requestAnimationFrame(drawFrame);
     return;
   }

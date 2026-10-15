@@ -10,6 +10,7 @@ Cam Chaos Booth is a webcam playground with real-time visual effects, glitch swe
 - Optional glitch sweep layer
 - Capture with a 3 or 10 second self-timer, or instantly; shots are JPEG blobs from `canvas.toBlob`, freed when cleared
 - Keyboard shortcuts for full effects map (`1-0`, `-`, `=`) and capture workflow, ignored while a form control has focus
+- Effects run as WebGL fragment shaders (two passes: effect, then glitch sweep); the JavaScript versions in `src/effects.js` are the tested reference and the fallback without WebGL. Add `?cpu` to the URL to force the CPU path
 - Unit tests for core pixel effect utilities
 - Static Vercel-ready deployment config
 
